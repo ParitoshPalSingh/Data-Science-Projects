@@ -1,0 +1,66 @@
+import numpy as np
+import pandas as pd
+import itertools
+
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import PassiveAggressiveClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+#Read the data news_dataset
+df1 = pd.read_csv('datasets/news_dataset.csv')
+
+#Get the shape and head
+print(f'Shape of the dataframe is: {df1.shape}')
+print(df1.head())
+
+#Get the labels from the Data Frame
+labels = df1.label
+print(labels.head())
+
+#Splitting dataset into training and testing
+x_train,x_test,y_train,y_test = train_test_split(df1['text'], labels, test_size=0.2,random_state=17)
+
+## Now initializing TF-IDF vectorizer with stopwords
+## Maximum document frequency of 0.75 (Terms with higher document frequency will not be considered)
+
+'''
+STOPWORDS -> most common words in a language that are to be filtered before processing the Natural language data
+
+TF-IDF-Vectorizer?
+1. TF (Term Frequency): The number of times a word appears in a document is its Term Frequency.
+                        A higher value means a term appears more often than others, and so, the document is a good match
+                        when the term is part of the search terms.
+2. IDF (Inverse Document Frequency): Words that occur many times a document, but also occur many times in many others, 
+                        may be irrelevant.
+                        IDF is a measure of how significant a term is in the entire corpus.
+
+The TfidfVectorizer will convert the collection of raw documents into a matrix consisting of TF-IDF features.
+'''
+
+tf_idf_vectorizer = TfidfVectorizer(stop_words='english', max_df=0.75)
+tf_idf_train = tf_idf_vectorizer.fit_transform(x_train)
+tf_idf_test = tf_idf_vectorizer.transform(x_test)
+
+'''
+Passive Aggressive algorithms are online learning algorithms. 
+Such an algorithm remains passive for a correct classification outcome, and turns aggressive in the event of a miscalculation,
+updating and adjusting. 
+Unlike most other algorithms, it does not converge. 
+Its purpose is to make updates that correct the loss, causing very little change in the norm of the weight vector.
+'''
+
+## Fitting the train dataset on PassiveAggressiveClassifier
+passive_aggr_clf = PassiveAggressiveClassifier(max_iter=50)
+passive_aggr_clf.fit(tf_idf_train, y_train)
+
+## Predict on the test set
+y_pred = passive_aggr_clf.predict(tf_idf_test)
+
+#accuracy
+acc_score = accuracy_score(y_test, y_pred)
+print(f' The accuracy is : {round(acc_score*100,2)}%')
+
+## Confusion Matrix
+print(confusion_matrix(y_test, y_pred, labels=['FAKE','REAL']))
+
